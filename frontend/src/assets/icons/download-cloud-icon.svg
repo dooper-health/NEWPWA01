@@ -1,0 +1,16 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="cloud-download">
+<g id="Path">
+<path d="M19 17.9993C20.933 17.9993 22.5 16.4323 22.5 14.4993C22.5 12.5663 20.933 10.9993 19 10.9993H18C18.397 9.23084 17.7155 7.40611 16.2123 6.21248C14.7091 5.01885 12.6125 4.63765 10.7123 5.21248C8.81209 5.78731 7.39699 7.23084 7.00002 8.99931C4.80139 8.91124 2.84549 10.325 2.3337 12.3721C1.82191 14.4193 2.89759 16.5264 4.90002 17.3993" stroke="#4B465C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M19 17.9993C20.933 17.9993 22.5 16.4323 22.5 14.4993C22.5 12.5663 20.933 10.9993 19 10.9993H18C18.397 9.23084 17.7155 7.40611 16.2123 6.21248C14.7091 5.01885 12.6125 4.63765 10.7123 5.21248C8.81209 5.78731 7.39699 7.23084 7.00002 8.99931C4.80139 8.91124 2.84549 10.325 2.3337 12.3721C1.82191 14.4193 2.89759 16.5264 4.90002 17.3993" stroke="white" stroke-opacity="0.2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="Path_2">
+<path d="M12 13V22" stroke="#4B465C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M12 13V22" stroke="white" stroke-opacity="0.2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="Path_3">
+<path d="M9 19L12 22L15 19" stroke="#4B465C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9 19L12 22L15 19" stroke="white" stroke-opacity="0.2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+</svg>

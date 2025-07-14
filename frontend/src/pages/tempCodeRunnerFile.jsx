@@ -1,0 +1,1 @@
+// sm:h-full ,sm:w-full;

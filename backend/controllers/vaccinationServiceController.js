@@ -1,0 +1,118 @@
+import multer from 'multer';
+import mongoose from 'mongoose';
+import Grid from 'gridfs-stream';
+import { GridFsStorage } from 'multer-gridfs-storage';
+import moment from 'moment';
+import Document from '../models/vaccination.js';
+import User from '../models/User.js';
+import { triggerBookingNotification } from './notificationController.js';
+
+const conn = mongoose.connection;
+let gfs;
+conn.once('open', () => {
+  gfs = Grid(conn.db, mongoose.mongo);
+  gfs.collection('uploads');
+});
+
+// Configure GridFS storage
+const storage = new GridFsStorage({
+  url: process.env.MONGO_URI,
+  file: (req, file) => {
+    return {
+      filename: Date.now() + '-' + file.originalname,
+      bucketName: 'uploads'
+    };
+  }
+});
+
+// Initialize multer with GridFS storage
+const upload = multer({ storage }).array('prescription', 10);
+
+// Controller function to handle vaccine bookings
+export const Vaccine = (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).send({ error: err.message });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).send({ error: 'No files were uploaded.' });
+    }
+
+    // Extract fields from the request body
+    const { phoneNumber, Lab, patientName, patientAge, patientGender, startDate, timeslot, dhaCharge, details } = req.body;
+
+    // Validate required fields
+    if (!phoneNumber) return res.status(400).send({ error: 'phoneNumber is required' });
+    if (!Lab) return res.status(400).send({ error: 'Lab is required' });
+    if (!patientName) return res.status(400).send({ error: 'patientName is required' });
+    if (!patientAge) return res.status(400).send({ error: 'patientAge is required' });
+    if (!patientGender) return res.status(400).send({ error: 'patientGender is required' });
+    if (!startDate) return res.status(400).send({ error: 'startDate is required' });
+    if (!timeslot) return res.status(400).send({ error: 'timeslot is required' });
+
+    const formattedStartDate = moment(startDate).format('DD/MM/YY');
+
+    try {
+      // Step 1: Find the user by phone number
+      const user = await User.findOne({ mobile: phoneNumber });
+      if (!user) {
+        return res.status(404).send({ error: 'User not found' });
+      }
+
+      // Step 2: Get the user ID
+      const userId = user._id;
+
+      // Step 3: Find or create a vaccination document for the user
+      let vaccinationDocument = await Document.findOne({ userId });
+      if (!vaccinationDocument) {
+        vaccinationDocument = new Document({ userId, bookings: [] });
+      }
+
+      // Step 4: Create a new booking
+      const booking = {
+        mobileNumber: phoneNumber,
+        files: req.files.map(file => file.id),
+        prescriptionId: req.files.map(file => file.id),
+        Vaccine: Lab,
+        patientName,
+        patientAge,
+        patientGender,
+        startDate: formattedStartDate,
+        timeslot,
+        dhaCharge,
+        details
+      };
+
+      // Step 5: Add the new booking to the user's bookings array
+      vaccinationDocument.bookings.push(booking);
+
+      // Step 6: Save the document
+      await vaccinationDocument.save();
+
+      // Step 7: Trigger notification for pharmacy
+      try {
+        const latestBooking = vaccinationDocument.bookings[vaccinationDocument.bookings.length - 1];
+        await triggerBookingNotification(
+          {
+            mobileNumber: phoneNumber,
+            patientName,
+            bookingId: latestBooking.bookingId
+          },
+          'Vaccination',
+          mongoose
+        );
+        console.log('✅ Vaccination booking notification triggered successfully');
+      } catch (notificationError) {
+        console.error('⚠️ Failed to trigger notification:', notificationError);
+        // Don't fail the booking creation if notification fails
+      }
+
+      res.status(201).json(vaccinationDocument);
+    } catch (error) {
+      console.error('❌ Error creating vaccination booking:', error);
+      res.status(500).send({ error: 'Failed to save document' });
+    }
+  });
+};
+
