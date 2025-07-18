@@ -81,11 +81,11 @@ export default (conn = mongoose) => {
     patientName: String,
     patientMobile: String,
     
-    // Notification status
+    // Notification status0
     status: { 
       type: String, 
-      enum: ['pending', 'accepted', 'rejected', 'completed'], 
-      default: 'pending' 
+      enum: ['pending', 'accepted', 'rejected', 'completed','incoming'], 
+      default: 'incoming' 
     },
     isRead: { type: Boolean, default: false },
     

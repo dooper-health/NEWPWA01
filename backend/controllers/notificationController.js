@@ -373,7 +373,7 @@ export const createMedicinePharmacyNotification = async (req, res) => {
       pharmacyId,
       patientName,
       patientMobile,
-      status: 'pending'
+      status: 'incoming'
     });
 
     await notification.save();
@@ -442,7 +442,7 @@ export const createVaccinationPharmacyNotification = async (req, res) => {
       pharmacyId,
       patientName,
       patientMobile,
-      status: 'pending'
+      status: 'incoming'
     });
 
     await notification.save();
@@ -670,6 +670,34 @@ export const getPharmacyNotificationsForPharmacy = async (req, res) => {
 // ==============================
 // Enhanced Get Notifications for PWA
 // ==============================
+// export const getPharmacyNotificationsForPWA = async (req, res) => {
+//   try {
+//     const { mobileNumber } = req.query;
+
+//     if (!mobileNumber) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         message: 'Mobile number is required' 
+//       });
+//     }
+
+//     const conn = req.conn || mongoose;
+//     const Notification = notificationModel(conn);
+
+//     const notifications = await Notification.find({ 
+//       for: 'PWA', 
+//       patientMobile: mobileNumber 
+//     })
+//       .sort({ createdAt: -1 })
+//       .limit(50);
+
+//     res.status(200).json({ success: true, notifications });
+//   } catch (error) {
+//     console.error('❌ Error fetching notifications for PWA:', error);
+//     res.status(500).json({ success: false, message: 'Failed to fetch notifications' });
+//   }
+// };
+
 export const getPharmacyNotificationsForPWA = async (req, res) => {
   try {
     const { mobileNumber } = req.query;
@@ -684,19 +712,50 @@ export const getPharmacyNotificationsForPWA = async (req, res) => {
     const conn = req.conn || mongoose;
     const Notification = notificationModel(conn);
 
+    // Load the medicine23 model
+    const MedicineModel = conn.models.medicine23 || conn.model('medicine23', new mongoose.Schema({
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      bookings: [{
+        bookingId: String,
+        mobileNumber: String,
+        status: String
+      }]
+    }));
+
+    // Step 1: Find if mobileNumber exists and fetch userId
+    const bookingDoc = await MedicineModel.findOne(
+      { 'bookings.mobileNumber': mobileNumber },
+      { userId: 1 }
+    );
+
+    if (!bookingDoc) {
+      return res.status(404).json({ 
+        success: false, 
+        message: `No bookings found for mobile number '${mobileNumber}' in medicine23.` 
+      });
+    }
+
+    const userId = bookingDoc.userId;
+
+    // Step 2: Get notifications using userId
     const notifications = await Notification.find({ 
       for: 'PWA', 
-      patientMobile: mobileNumber 
+       
     })
       .sort({ createdAt: -1 })
       .limit(50);
 
-    res.status(200).json({ success: true, notifications });
+    res.status(200).json({ 
+      success: true, 
+      userId, 
+      notifications 
+    });
   } catch (error) {
     console.error('❌ Error fetching notifications for PWA:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch notifications' });
   }
 };
+
 
 // ==============================
 // Mark Notification as Read

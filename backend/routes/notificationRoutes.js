@@ -37,7 +37,7 @@ router.post('/pwa-to-pharmacy/vaccination', createVaccinationPharmacyNotificatio
 // ==============================
 // Pharmacy to PWA Notifications (after pharmacy accepts booking)
 // ==============================
-router.post('/pharmacy-to-pwa', createNotificationToPWA);
+// router.post('/pharmacy-to-pwa', createNotificationToPWA);
 router.post('/pharmacy-to-pwa/medicine', createMedicineNotificationToPWA);
 router.post('/pharmacy-to-pwa/vaccination', createVaccinationNotificationToPWA);
 
