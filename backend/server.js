@@ -30,6 +30,7 @@ import StandaloneServiceRoutes from './routes/StandaloneServiceRoutes.js';
 import StandaloneServiceRoutes3 from './routes/StandaloneServiceRoutes3.js';
 import { server, app } from './config/socket.js'; // Import the server and app from socket.js
 import notificationRoutes from './routes/notificationRoutes.js';
+import notificationBidirectionalRoutes from './routes/notificationBidirectionalRoutes.js';
 
 
 
@@ -110,7 +111,7 @@ app.use('/api/sd', StandaloneServiceRoutes);
 app.use('/api/sd3', StandaloneServiceRoutes3); ///only Get Bookings 
 
 app.use('/api/notifications', notificationRoutes);
-
+app.use('/api/notifications-bidirectional', notificationBidirectionalRoutes);
 
 
 // http://localhost:5000/api/urgentbooking/urgent-cases

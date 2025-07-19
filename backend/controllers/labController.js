@@ -229,6 +229,7 @@ import { GridFsStorage } from 'multer-gridfs-storage';
 import moment from 'moment';
 import Document from '../models/Lab.js'; // Assuming Document is the model
 import User from '../models/User.js'; // Import User model
+import NotificationModel from '../models/Notification.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -251,6 +252,16 @@ const storage = new GridFsStorage({
 
 const upload = multer({ storage }).array('prescription', 10);
 
+// Helper to get Notification model
+const Notification = NotificationModel(mongoose);
+
+// Generate unique booking ID
+const generateBookingId = () => {
+  const timestamp = Date.now().toString();
+  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `LAB${timestamp.slice(-6)}${random}`;
+};
+
 export const Lab = (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
@@ -261,7 +272,7 @@ export const Lab = (req, res) => {
       return res.status(400).send({ error: 'No files were uploaded.' });
     }
 
-    const { phoneNumber, Lab, patientName, patientAge, patientGender, startDate, timeslot, dhaCharge,details} = req.body;
+    const { phoneNumber, Lab, patientName, patientAge, patientGender, startDate, timeslot, dhaCharge, details } = req.body;
 
     if (!phoneNumber) {
       return res.status(400).send({ error: 'phoneNumber is required' });
@@ -286,6 +297,7 @@ export const Lab = (req, res) => {
     }
 
     const formattedStartDate = moment(startDate).format('DD/MM/YY');
+    const bookingId = generateBookingId();
 
     try {
       // Step 1: Find the user by phone number
@@ -305,6 +317,7 @@ export const Lab = (req, res) => {
 
       // Step 4: Create a new booking
       const booking = {
+        bookingId: bookingId,
         mobileNumber: phoneNumber,
         files: req.files.map(file => file.id),
         Lab,
@@ -317,19 +330,41 @@ export const Lab = (req, res) => {
         details,
         prescriptionId: req.files.map(file => file.id) // Store the file ID
       };
-      
 
-      // console.log(booking)
       // Step 5: Add the new booking to the user's bookings array
       labDocument.bookings.push(booking);
 
       // Step 6: Save the document
       await labDocument.save();
 
-      console.log(labDocument)
+      // Step 7: Create notification for Lab
+      try {
+        await Notification.create({
+          message: `New Lab booking request for ${Lab}`,
+          for: 'Lab',
+          bookingId: bookingId,
+          serviceType: 'Lab',
+          labId: 'default-lab-id', // You can replace this with actual lab ID if available
+          labName: Lab,
+          patientMobile: phoneNumber,
+          patientName: patientName,
+          status: 'incoming',
+        });
+      } catch (notificationError) {
+        console.error('Failed to create notification:', notificationError);
+        // Don't fail the booking if notification fails
+      }
 
-      res.status(201).json(labDocument);
+      console.log('Lab booking created with ID:', bookingId);
+
+      res.status(201).json({
+        success: true,
+        message: 'Lab booking created successfully',
+        bookingId: bookingId,
+        labDocument: labDocument
+      });
     } catch (error) {
+      console.error('Lab booking error:', error);
       res.status(500).send({ error: 'Failed to save document' });
     }
   });

@@ -64,7 +64,7 @@ import mongoose from 'mongoose';
 export default (conn = mongoose) => {
   const schema = new mongoose.Schema({
     message: { type: String, required: true },
-    for: { type: String, enum: ['DRA', 'PWA', 'Pharmacy'], required: true },
+    for: { type: String, enum: ['DRA', 'PWA', 'Pharmacy','Lab'], required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     serviceType: String,
     bookingId: String,
@@ -72,6 +72,8 @@ export default (conn = mongoose) => {
     // DRA related fields
     draName: String,
     draId: String,
+    labName: String,
+    labId: String,
     
     // Pharmacy related fields
     pharmacyName: String,
