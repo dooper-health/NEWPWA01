@@ -104,7 +104,7 @@ export default (conn = mongoose) => {
 
   // Add indexes for better query performance
   schema.index({ for: 1, createdAt: -1 });
-  schema.index({ patientMobile: 1, createdAt: -1 });
+  schema.index({ patientMobile: 1,bookingId:1 });
   schema.index({ userId: 1, createdAt: -1 });
   schema.index({ bookingId: 1 });
 

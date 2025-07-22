@@ -400,14 +400,141 @@ export const createMedicinePharmacyNotification = async (req, res) => {
 // ==============================
 // Enhanced Vaccination Pharmacy Notification
 // ==============================
+// export const createVaccinationPharmacyNotification = async (req, res) => {
+//   try {
+//     const { patientMobile, pharmacyName, pharmacyId, patientName } = req.body;
+
+//     const conn = req.conn || mongoose;
+//     const Notification = notificationModel(conn);
+//     const serviceType = 'Vaccination';
+//     const message = `New ${serviceType} booking request`;
+
+//     if (!patientMobile) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         message: 'Missing patientMobile.' 
+//       });
+//     }
+
+//     // Find booking by patientMobile in vaccination10
+//     const VaccinationModel = conn.models.vaccination10 || conn.model('vaccination10', userBookingVdSchema);
+//     const bookingDoc = await VaccinationModel.findOne(
+//       { 'bookings.mobileNumber': patientMobile }, 
+//       { 'bookings.$': 1 }
+//     );
+
+//     if (!bookingDoc || !bookingDoc.bookings || bookingDoc.bookings.length === 0) {
+//       console.warn(`Vaccination booking not found for patientMobile: ${patientMobile}`);
+//       return res.status(404).json({ 
+//         success: false, 
+//         message: `Vaccination booking for patientMobile '${patientMobile}' not found.` 
+//       });
+//     }
+
+//     const bookingId = bookingDoc.bookings[0].bookingId || null;
+
+//     const notification = new Notification({
+//       message,
+//       for: 'Pharmacy',
+//       serviceType,
+//       bookingId,
+//       pharmacyName,
+//       pharmacyId,
+//       patientName,
+//       patientMobile,
+//       status: 'incoming'
+//     });
+
+//     await notification.save();
+
+//     // Emit event to all pharmacies
+//     if (typeof io !== 'undefined') {
+//       io.emit('newPharmacyBooking', { 
+//         message, 
+//         serviceType, 
+//         bookingId, 
+//         patientName, 
+//         patientMobile,
+//         timestamp: new Date()
+//       });
+//     }
+
+//     res.status(201).json({ success: true, notification });
+//   } catch (error) {
+//     console.error('❌ Error creating vaccination pharmacy notification:', error);
+//     res.status(500).json({ success: false, message: 'Internal Server Error' });
+//   }
+// };
+
+// export const createVaccinationPharmacyNotification = async (req, res) => {
+//   try {
+//     const { patientMobile } = req.body;
+
+//     if (!patientMobile) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         message: 'Missing patientMobile.' 
+//       });
+//     }
+
+//     const conn = req.conn || mongoose;
+//     const Notification = notificationModel(conn);
+//     const VaccinationModel = conn.models.vaccination10 || conn.model('vaccination10', userBookingVdSchema);
+//     const serviceType = 'Vaccination';
+
+//     // Fix: Use $elemMatch to extract the matching booking
+//     const bookingDoc = await VaccinationModel.findOne(
+//       { bookings: { $elemMatch: { mobileNumber: patientMobile } } },
+//       { 'bookings.$': 1 }
+//     );
+
+//     if (!bookingDoc || !bookingDoc.bookings?.length) {
+//       return res.status(404).json({ 
+//         success: false, 
+//         message: `Vaccination booking for ${patientMobile} not found.` 
+//       });
+//     }
+
+//     const booking = bookingDoc.bookings[0];
+//     const { bookingId, patientName } = booking;
+
+//     const message = `New ${serviceType} booking request from ${patientName || patientMobile}`;
+
+//     const notification = new Notification({
+//       message,
+//       for: 'Pharmacy',
+//       serviceType,
+//       bookingId,
+//       pharmacyName: null,
+//       pharmacyId: null,
+//       patientName,
+//       patientMobile,
+//       status: 'incoming'
+//     });
+
+//     await notification.save();
+
+//     // Broadcast to all pharmacies
+//     if (typeof io !== 'undefined') {
+//       io.emit('newPharmacyBooking', {
+//         message,
+//         serviceType,
+//         bookingId,
+//         patientName,
+//         patientMobile,
+//         timestamp: new Date()
+//       });
+//     }
+
+//     res.status(201).json({ success: true, notification });
+//   } catch (error) {
+//     console.error('❌ Error creating pharmacy notification:', error);
+//     res.status(500).json({ success: false, message: 'Internal Server Error' });
+//   }
+// };
 export const createVaccinationPharmacyNotification = async (req, res) => {
   try {
-    const { patientMobile, pharmacyName, pharmacyId, patientName } = req.body;
-
-    const conn = req.conn || mongoose;
-    const Notification = notificationModel(conn);
-    const serviceType = 'Vaccination';
-    const message = `New ${serviceType} booking request`;
+    const { patientMobile } = req.body;
 
     if (!patientMobile) {
       return res.status(400).json({ 
@@ -416,30 +543,52 @@ export const createVaccinationPharmacyNotification = async (req, res) => {
       });
     }
 
-    // Find booking by patientMobile in vaccination10
+    const conn = req.conn || mongoose;
+    const Notification = notificationModel(conn);
     const VaccinationModel = conn.models.vaccination10 || conn.model('vaccination10', userBookingVdSchema);
+    const serviceType = 'Vaccination';
+
+    // Step 1: Get the full bookings array for the mobile number
     const bookingDoc = await VaccinationModel.findOne(
-      { 'bookings.mobileNumber': patientMobile }, 
-      { 'bookings.$': 1 }
+      { 'bookings.mobileNumber': patientMobile },
+      { bookings: 1 }
     );
 
-    if (!bookingDoc || !bookingDoc.bookings || bookingDoc.bookings.length === 0) {
-      console.warn(`Vaccination booking not found for patientMobile: ${patientMobile}`);
+    if (!bookingDoc || !bookingDoc.bookings?.length) {
       return res.status(404).json({ 
         success: false, 
-        message: `Vaccination booking for patientMobile '${patientMobile}' not found.` 
+        message: `Vaccination booking for ${patientMobile} not found.` 
       });
     }
 
-    const bookingId = bookingDoc.bookings[0].bookingId || null;
+    // Step 2: Filter bookings for this mobile number
+    const matchedBookings = bookingDoc.bookings.filter(
+      (b) => b.mobileNumber === patientMobile
+    );
+
+    if (matchedBookings.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: `No bookings found for mobile number ${patientMobile}` 
+      });
+    }
+
+    // Step 3: Sort by MongoDB _id (timestamp-based), get latest
+    const latestBooking = matchedBookings.sort(
+      (a, b) => new Date(b._id.getTimestamp()) - new Date(a._id.getTimestamp())
+    )[0];
+
+    const { bookingId, patientName } = latestBooking;
+
+    const message = `New ${serviceType} booking request from ${patientName || patientMobile}`;
 
     const notification = new Notification({
       message,
       for: 'Pharmacy',
       serviceType,
       bookingId,
-      pharmacyName,
-      pharmacyId,
+      pharmacyName: null,
+      pharmacyId: null,
       patientName,
       patientMobile,
       status: 'incoming'
@@ -447,13 +596,13 @@ export const createVaccinationPharmacyNotification = async (req, res) => {
 
     await notification.save();
 
-    // Emit event to all pharmacies
+    // Emit to all pharmacies
     if (typeof io !== 'undefined') {
-      io.emit('newPharmacyBooking', { 
-        message, 
-        serviceType, 
-        bookingId, 
-        patientName, 
+      io.emit('newPharmacyBooking', {
+        message,
+        serviceType,
+        bookingId,
+        patientName,
         patientMobile,
         timestamp: new Date()
       });
@@ -461,10 +610,11 @@ export const createVaccinationPharmacyNotification = async (req, res) => {
 
     res.status(201).json({ success: true, notification });
   } catch (error) {
-    console.error('❌ Error creating vaccination pharmacy notification:', error);
+    console.error('❌ Error creating pharmacy notification:', error);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 };
+
 
 // ==============================
 // Enhanced PWA Notification Creation

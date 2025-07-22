@@ -1,5 +1,5 @@
 import express from 'express';
-import { notifyLab, notifyUser, getNotifications } from '../controllers/notificationBidirectionalController.js';
+import { notifyLab, notifyUser, getNotifications,getAcceptedNotifications } from '../controllers/notificationBidirectionalController.js';
 
 const router = express.Router();
 
@@ -10,8 +10,10 @@ router.post('/lab', notifyLab);
 router.post('/user', notifyUser);
 
 // Get notifications for a recipient (user or lab)
+router.get('/accepted', getAcceptedNotifications);
 router.get('/:recipientId', getNotifications);
+
 
 export default router; 
 
-///notificationBidirectionalRoutes
+///notificationBidirectionalRoutesrg

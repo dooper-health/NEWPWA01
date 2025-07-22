@@ -115,3 +115,24 @@ export const getNotifications = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 }; 
+
+
+
+
+export const getAcceptedNotifications = async (req, res) => {
+  try {
+    const conn = req.conn2 || mongoose; // Use the correct connection
+    const Notification = NotificationModel(conn);
+
+
+    const notifications = await Notification.find({
+      status: 'accepted'
+    }).sort({ createdAt: -1 });
+
+
+    res.json({ success: true, notifications });
+  } catch (err) {
+    console.error('Error in getAcceptedNotifications:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
